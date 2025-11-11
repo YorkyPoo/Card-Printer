@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phonics Flash Cards</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Google Font (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* bg-slate-100 */
+        }
+
+        /* Card styles for screen */
+        .card {
+            /* Simulate 2.5x3.5in aspect ratio (5:7) */
+            width: 240px; /* w-60 */
+            height: 336px; /* h-84 */
+            padding: 1rem; /* p-4 */
+            border-radius: 1rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); /* shadow-lg */
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease-in-out;
+            overflow: hidden; /* Ensure content stays within rounded borders */
+        }
+        
+        .card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); /* shadow-2xl */
+        }
+
+        .card-title {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 900; /* font-black */
+            text-align: center;
+            margin-bottom: 0.5rem; /* mb-2 */
+        }
+
+        .card-icon {
+            font-size: 3rem; /* text-5xl */
+            text-align: center;
+            margin-bottom: 0.5rem; /* mb-2 */
+            line-height: 1;
+        }
+
+        .card-rule {
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.4;
+            /* flex-grow: 1;  <- REMOVED this property to fix the large gap */
+            margin-bottom: 0.5rem; /* Added a small margin for spacing */
+        }
+        
+        .card-examples {
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.5;
+        }
+
+        .card-examples strong {
+            font-size: 1rem; /* text-base */
+        }
+
+        /* ------------------------------------- */
+        /* --- CORRECTED PRINT STYLES (FIXED)--- */
+        /* ------------------------------------- */
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background-color: #ffffff;
+            }
+
+            /* HIDE INSTRUCTIONS */
+            #print-instructions {
+                display: none;
+            }
+
+            @page {
+                size: letter portrait;
+                /* Set page margins to 0 for borderless printing */
+                margin: 0;
+            }
+            
+            #card-container {
+                display: block;
+            }
+
+            /* Card Sizing and Tighter Spacing */
+            .card {
+                width: 2.5in !important;
+                height: 3.5in !important;
+                /* TIGHTER PADDING */
+                padding: 0.1in !important; 
+                margin: 0;
+                border: 1px dashed #999;
+                box-shadow: none !important;
+                /* Use a smaller radius for print, or 0 if preferred */
+                border-radius: 0.15in !important;
+                overflow: hidden !important;
+                page-break-inside: avoid !important;
+                display: flex !important;
+                flex-direction: column !important;
+                float: left;
+                /* REMOVED MARGINS TO MAKE CARDS TOUCH */
+                margin-right: 0;
+                margin-bottom: 0;
+            }
+            
+            /* Tighter Internal Font and Line Spacing */
+            .card-title {
+                font-size: 16pt !important;
+                font-weight: 900 !important;
+                /* REDUCED MARGIN */
+                margin-bottom: 0.1in !important;
+            }
+            .card-icon {
+                font-size: 36pt !important;
+                 /* REDUCED MARGIN */
+                margin-bottom: 0.05in !important;
+            }
+            .card-rule, .card-examples, .card-examples li {
+                font-size: 11pt !important;
+                /* TIGHTER LINE-HEIGHT */
+                line-height: 1.2 !important;
+            }
+            .card-examples strong {
+                font-size: 12pt !important;
+            }
+            .card-examples ul {
+                 /* REDUCED MARGIN */
+                margin-top: 0.05in;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 p-8">
+
+    <div id="print-instructions" class="max-w-4xl mx-auto mb-8 p-4 bg-white rounded-lg shadow">
+        <h1 class="text-2xl font-bold text-center">Phonics Flash Cards</h1>
+        <p class="text-center mt-2">Here are your phonics cards. To print them as 2.5" x 3.5" cards, just use your browser's Print function (Ctrl+P or Cmd+P). The page is specially styled to format them correctly on letter-sized paper.</p>
+    </div>
+
+    <!-- Wrapper for screen layout -->
+    <div id="card-container-wrapper" class="flex justify-center">
+        <!-- Grid container for the cards -->
+        <div id="card-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    
+            <!-- Card 1: Closed Syllable -->
+            <div class="card bg-red-50 text-red-900">
+                <h2 class="card-title text-red-700">Closed Syllable</h2>
+                <div class="card-icon">🚪</div>
+                <p class="card-rule">A syllable with <span class="font-bold">one vowel</span> followed by <span class="font-bold">one or more consonants</span>. The vowel sound is <span class="font-bold">short</span>.</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li>c<span class="font-bold">a</span>t</li>
+                        <li>p<span class="font-bold">e</span>n</li>
+                        <li>s<span class="font-bold">i</span>t</li>
+                        <li>h<span class="font-bold">o</span>p</li>
+                        <li>c<span class="font-bold">u</span>p</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 2: Open Syllable -->
+            <div class="card bg-green-50 text-green-900">
+                <h2 class="card-title text-green-700">Open Syllable</h2>
+                <div class="card-icon">🚪</div>
+                <p class="card-rule">A syllable that ends in <span class="font-bold">one vowel</span>. The vowel sound is <span class="font-bold">long</span> (it says its name).</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li>h<span class="font-bold">i</span></li>
+                        <li>m<span class="font-bold">e</span></li>
+                        <li>g<span class="font-bold">o</span></li>
+                        <li>sh<span class="font-bold">e</span></li>
+                        <li>w<span class="font-bold">e</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 3: Magic 'e' (VCe) -->
+            <div class="card bg-blue-50 text-blue-900">
+                <h2 class="card-title text-blue-700">Magic 'e' (VCe)</h2>
+                <div class="card-icon">✨</div>
+                <p class="card-rule">The <span class="font-bold">Magic 'e'</span> at the end is silent. It jumps over one consonant to make the first vowel <span class="font-bold">long</span> (say its name).</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li>cap ➔ c<span class="font-bold">a</span>p<span class="font-bold">e</span></li>
+                        <li>kit ➔ k<span class="font-bold">i</span>t<span class="font-bold">e</span></li>
+                        <li>hop ➔ h<span class="font-bold">o</span>p<span class="font-bold">e</span></li>
+                        <li>cub ➔ c<span class="font-bold">u</span>b<span class="font-bold">e</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 4: FLOSS Rule -->
+            <div class="card bg-teal-50 text-teal-900">
+                <h2 class="card-title text-teal-700">FLOSS Rule</h2>
+                <div class="card-icon">🦷</div>
+                <p class="card-rule">In a <span class="font-bold">one-syllable</span> word with a <span class="font-bold">short vowel</span>, double the <span class="font-bold">f</span>, <span class="font-bold">l</span>, <span class="font-bold">s</span>, and <span class="font-bold">z</span> at the end.</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li>stu<span class="font-bold">ff</span></li>
+                        <li>be<span class="font-bold">ll</span></li>
+                        <li>mi<span class="font-bold">ss</span></li>
+                        <li>bu<span class="font-bold">zz</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 5: C or K? (Kite & Cat) -->
+            <div class="card bg-orange-50 text-orange-900">
+                <h2 class="card-title text-orange-700">C or K?</h2>
+                <div class="card-icon">🐱 🪁</div>
+                <p class="card-rule"><span class="font-bold">"K"</span> takes <span class="font-bold">i</span> and <span class="font-bold">e</span>. (Kite Rule)<br><span class="font-bold">"C"</span> takes <span class="font-bold">a</span>, <span class="font-bold">o</span>, and <span class="font-bold">u</span>. (Cat Rule)</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li><strong>K:</strong> <span class="font-bold">k</span>ey, <span class="font-bold">k</span>ind, <span class="font-bold">k</span>iss</li>
+                        <li><strong>C:</strong> <span class="font-bold">c</span>at, <span class="font-bold">c</span>ot, <span class="font-bold">c</span>up</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Card 6: Ending /k/ Sound -->
+            <div class="card bg-yellow-50 text-yellow-900">
+                <h2 class="card-title text-yellow-700">Ending /k/ Sound</h2>
+                <div class="card-icon">🦆 🎂</div>
+                <p class="card-rule">Use <span class="font-bold">-ck</span> after a <span class="font-bold">short vowel</span>.<br>Use <span class="font-bold">-ke</span> after a <span class="font-bold">long vowel</span> (Magic 'e').</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li><strong>Short:</strong> du<span class="font-bold">ck</span>, so<span class="font-bold">ck</span>, pa<span class="font-bold">ck</span></li>
+                        <li><strong>Long:</strong> ba<span class="font-bold">ke</span>, li<span class="font-bold">ke</span>, bi<span class="font-bold">ke</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 7: Digraphs -->
+            <div class="card bg-purple-50 text-purple-900">
+                <h2 class="card-title text-purple-700">Digraphs</h2>
+                <div class="card-icon">🤝</div>
+                <p class="card-rule">Two letters that stick together to make <span class="font-bold">one new sound</span>.</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li><span class="font-bold">sh</span>ip</li>
+                        <li><span class="font-bold">ch</span>ip</li>
+                        <li><span class="font-bold">th</span>in</li>
+                        <li><span class="font-bold">wh</span>isk</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 8: More Digraphs -->
+            <div class="card bg-indigo-50 text-indigo-900">
+                <h2 class="card-title text-indigo-700">More Digraphs</h2>
+                <div class="card-icon">🗣️</div>
+                <p class="card-rule">More letter teams that make one sound!</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li><span class="font-bold">ph</span>one (/f/)</li>
+                        <li>lau<span class="font-bold">gh</span> (/f/)</li>
+                        <li>bri<span class="font-bold">dge</span> (/j/)</li>
+                        <li>du<span class="font-bold">ck</span> (/k/)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 9: Vowel Teams -->
+            <div class="card bg-pink-50 text-pink-900">
+                <h2 class="card-title text-pink-700">Vowel Teams</h2>
+                <div class="card-icon">👟👟</div>
+                <p class="card-rule">"When two vowels go walking, the <span class="font-bold">first one does the talking</span>" (it says its long name).</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li>b<span class="font-bold">oa</span>t (says o)</li>
+                        <li>s<span class="font-bold">ai</span>l (says a)</li>
+                        <li>gr<span class="font-bold">ee</span>n (says e)</li>
+                        <li>p<span class="font-bold">ie</span> (says i)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 10: Diphthongs -->
+            <div class="card bg-lime-50 text-lime-900">
+                <h2 class="card-title text-lime-700">Diphthongs</h2>
+                <div class="card-icon">🤕</div>
+                <p class="card-rule">Two vowels that make a <span class="font-bold">special, sliding sound</span>. (Like the "ow" in "ouch!")</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li>cl<span class="font-bold">ou</span>d</li>
+                        <li>c<span class="font-bold">ow</span></li>
+                        <li>c<span class="font-bold">oi</span>n</li>
+                        <li>b<span class="font-bold">oy</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 11: Bossy 'r' -->
+            <div class="card bg-red-800 text-red-50">
+                <h2 class="card-title text-red-100">Bossy 'r'</h2>
+                <div class="card-icon">🏴‍☠️</div>
+                <p class="card-rule">The <span class="font-bold">'r'</span> is the boss! It takes control and <span class="font-bold">changes the vowel's sound</span>.</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li>c<span class="font-bold">ar</span></li>
+                        <li>f<span class="font-bold">or</span>k</li>
+                        <li>h<span class="font-bold">er</span>, b<span class="font-bold">ir</span>d, t<span class="font-bold">ur</span>n</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 12: Soft C & G -->
+            <div class="card bg-cyan-50 text-cyan-900">
+                <h2 class="card-title text-cyan-700">Soft C & G</h2>
+                <div class="card-icon">🧊</div>
+                <p class="card-rule"><span class="font-bold">C</span> and <span class="font-bold">G</span> say their soft sounds (/s/ and /j/) when followed by <span class="font-bold">e</span>, <span class="font-bold">i</span>, or <span class="font-bold">y</span>.</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li><strong>Soft C:</strong> <span class="font-bold">ce</span>nt, <span class="font-bold">ci</span>ty, <span class="font-bold">cy</span>cle</li>
+                        <li><strong>Soft G:</strong> <span class="font-bold">ge</span>m, <span class="font-bold">gi</span>ant, <span class="font-bold">gy</span>m</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 13: 'Y' as a Vowel -->
+            <div class="card bg-fuchsia-50 text-fuchsia-900">
+                <h2 class="card-title text-fuchsia-700">'Y' as a Vowel</h2>
+                <div class="card-icon">🦋 🐇</div>
+                <p class="card-rule"><span class="font-bold">1-Syllable:</span> 'y' says <span class="font-bold">/ī/</span> (long i) like <span class="font-bold">fly</span>.<br><span class="font-bold">2-Syllables:</span> 'y' says <span class="font-bold">/ē/</span> (long e) like <span class="font-bold">bunny</span>.</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li><strong>/ī/:</strong> m<span class="font-bold">y</span>, tr<span class="font-bold">y</span>, sh<span class="font-bold">y</span></li>
+                        <li><strong>/ē/:</strong> pupp<span class="font-bold">y</span>, funn<span class="font-bold">y</span>, happ<span class="font-bold">y</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 14: Sounds of -ed -->
+            <div class="card bg-slate-50 text-slate-900">
+                <h2 class="card-title text-slate-700">Sounds of -ed</h2>
+                <div class="card-icon">⏰</div>
+                <p class="card-rule">The past tense suffix <span class="font-bold">-ed</span> makes three different sounds:</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li><span class="font-bold">/t/</span> (like in jump<span class="font-bold">ed</span>)</li>
+                        <li><span class="font-bold">/d/</span> (like in fill<span class="font-bold">ed</span>)</li>
+                        <li><span class="font-bold">/ed/</span> (like in want<span class="font-bold">ed</span>)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 15: Doubling Rule (1-1-1) -->
+            <div class="card bg-sky-50 text-sky-900">
+                <h2 class="card-title text-sky-700">Doubling Rule (1-1-1)</h2>
+                <div class="card-icon">1️⃣ 1️⃣ 1️⃣</div>
+                <p class="card-rule">For a <span class="font-bold">1-syllable</span> word with <span class="font-bold">1 short vowel</span> and <span class="font-bold">1 ending consonant</span>... <span class="font-bold">Double the consonant</span> before adding a vowel suffix (-ing, -ed, -er, -est).</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li>hop ➔ ho<span class="font-bold">pp</span>ing, ho<span class="font-bold">pp</span>ed</li>
+                        <li>big ➔ bi<span class="font-bold">gg</span>er, bi<span class="font-bold">gg</span>est</li>
+                        <li>run ➔ ru<span class="font-bold">nn</span>er, ru<span class="font-bold">nn</span>ing</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Card 16: Plurals (-s / -es) -->
+            <div class="card bg-emerald-50 text-emerald-900">
+                <h2 class="card-title text-emerald-700">Plurals (-s / -es)</h2>
+                <div class="card-icon">🐈 🐈</div>
+                <p class="card-rule">Add <span class="font-bold">-s</span> to make most words plural. <br>Add <span class="font-bold">-es</span> to words ending in <span class="font-bold">s, x, z, sh, ch</span>.</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li>cat ➔ cat<span class="font-bold">s</span></li>
+                        <li>bus ➔ bus<span class="font-bold">es</span></li>
+                        <li>box ➔ box<span class="font-bold">es</span></li>
+                        <li>wish ➔ wish<span class="font-bold">es</span></li>
+                    </ul>
+                </div>
+            </div>
+        
+            <!-- --------------------------------- -->
+            <!-- MOVED NEW CARDS TO INSIDE THIS DIV -->
+            <!-- --------------------------------- -->
+
+            <!-- Card 17: Consonant Blends -->
+            <div class="card bg-stone-50 text-stone-900">
+                <h2 class="card-title text-stone-700">Consonant Blends</h2>
+                <div class="card-icon">🌪️</div>
+                <p class="card-rule">Two or three consonants that <span class="font-bold">blend</span> together. You can still hear <span class="font-bold">each letter's sound</span>!</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li><strong>s-blends:</strong> <span class="font-bold">st</span>op, <span class="font-bold">sp</span>in, <span class="font-bold">sl</span>ip</li>
+                        <li><strong>l-blends:</strong> <span class="font-bold">bl</span>ock, <span class="font-bold">cl</span>ap, <span class="font-bold">fl</span>ag</li>
+                        <li><strong>r-blends:</strong> <span class="font-bold">br</span>ag, <span class="font-bold">cr</span>ab, <span class="font-bold">tr</span>ip</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Card 18: Drop the 'e' Rule -->
+            <div class="card bg-rose-50 text-rose-900">
+                <h2 class="card-title text-rose-700">Drop the 'e' Rule</h2>
+                <div class="card-icon">✂️</div>
+                <p class="card-rule">When a word ends in a <span class="font-bold">Magic 'e'</span>, <span class="font-bold">drop the 'e'</span> before adding a vowel suffix (-ing, -ed, -er).</p>
+                <div class="card-examples">
+                    <strong>Examples:</strong>
+                    <ul class="list-none">
+                        <li>bake + ing ➔ bak<span class="font-bold">ing</span></li>
+                        <li>hope + ed ➔ hop<span class="font-bold">ed</span></li>
+                        <li>wave + ing ➔ wav<span class="font-bold">ing</span></li>
+                        <li>like + ed ➔ lik<span class="font-bold">ed</span></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Card 19: Change 'y' to 'i' Rule -->
+            <div class="card bg-amber-50 text-amber-900">
+                <h2 class="card-title text-amber-700">Change 'y' to 'i'</h2>
+                <div class="card-icon">🔄</div>
+                <p class="card-rule">When a word ends in a <span class="font-bold">consonant + y</span>, change the <span class="font-bold">'y' to 'i'</span> before adding a suffix (unless the suffix is -ing).</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li>happy ➔ happ<span class="font-bold">i</span>er, happ<span class="font-bold">i</span>est</li>
+                        <li>fly ➔ fl<span class="font-bold">i</span>es, fl<span class="font-bold">i</span>ed</li>
+                        <li><span class="font-bold">But:</span> fly + ing ➔ fly<span class="font-bold">ing</span></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Card 20: Silent Letter Teams -->
+            <div class="card bg-gray-50 text-gray-900">
+                <h2 class="card-title text-gray-700">Silent Letter Teams</h2>
+                <div class="card-icon">🤫</div>
+                <p class="card-rule">Two letters at the beginning or end of a word where one is <span class="font-bold">silent</span>!</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li><span class="font-bold">kn</span>ee, <span class="font-bold">kn</span>ow (/n/)</li>
+                        <li><span class="font-bold">wr</span>ite, <span class="font-bold">wr</span>ap (/r/)</li>
+                        <li>co<span class="font-bold">mb</span>, la<span class="font-bold">mb</span> (/m/)</li>
+                        <li><span class="font-bold">gn</span>at, si<span class="font-bold">gn</span> (/n/)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Card 21: Doubling Examples (Verbs 1) -->
+            <div class="card bg-sky-50 text-sky-900">
+                <h2 class="card-title text-sky-700">Doubling Examples</h2>
+                <div class="card-icon">🏃‍♀️💨</div>
+                <p class="card-rule">Verbs that follow the 1-1-1 Rule:</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li>scrub ➔ scru<span class="font-bold">bb</span>ing, scru<span class="font-bold">bb</span>ed</li>
+                        <li>stop ➔ sto<span class="font-bold">pp</span>ing, sto<span class="font-bold">pp</span>ed</li>
+                        <li>hop ➔ ho<span class="font-bold">pp</span>ing, ho<span class="font-bold">pp</span>ed</li>
+                        <li>clap ➔ cla<span class="font-bold">pp</span>ing, cla<span class="font-bold">pp</span>ed</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Card 22: Doubling Examples (Verbs 2) -->
+            <div class="card bg-sky-50 text-sky-900">
+                <h2 class="card-title text-sky-700">Doubling Examples</h2>
+                <div class="card-icon">🏃‍♂️💨</div>
+                <p class="card-rule">More verbs that follow the 1-1-1 Rule:</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li>grab ➔ gra<span class="font-bold">bb</span>ing, gra<span class="font-bold">bb</span>ed</li>
+                        <li>shred ➔ shre<span class="font-bold">dd</span>ing, shre<span class="font-bold">dd</span>ed</li>
+                        <li>pin ➔ pi<span class="font-bold">nn</span>ing, pi<span class="font-bold">nn</span>ed</li>
+                        <li>skip ➔ ski<span class="font-bold">pp</span>ing, ski<span class="font-bold">pp</span>ed</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Card 23: Doubling Examples (Verbs 3) -->
+            <div class="card bg-sky-50 text-sky-900">
+                <h2 class="card-title text-sky-700">Doubling Examples</h2>
+                <div class="card-icon">🏆</div>
+                <p class="card-rule">More verbs that follow the 1-1-1 Rule:</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li>run ➔ ru<span class="font-bold">nn</span>ing, ru<span class="font-bold">nn</span>er</li>
+                        <li>win ➔ wi<span class="font-bold">nn</span>ing, wi<span class="font-bold">nn</span>er</li>
+                        <li>rub ➔ ru<span class="font-bold">bb</span>ing, ru<span class="font-bold">bb</span>er</li>
+                        <li>drum ➔ dru<span class="font-bold">mm</span>ing, dru<span class="font-bold">mm</span>er</li>
+                        <li>sit ➔ si<span class="font-bold">tt</span>ing, si<span class="font-bold">tt</span>er</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Card 24: Doubling Examples (Adjectives) -->
+            <div class="card bg-sky-50 text-sky-900">
+                <h2 class="card-title text-sky-700">Doubling Examples</h2>
+                <div class="card-icon">📈</div>
+                <p class="card-rule">Adjectives that follow the 1-1-1 Rule:</p>
+                <div class="card-examples">
+                    <ul class="list-none">
+                        <li>big ➔ bi<span class="font-bold">gg</span>er, bi<span class="font-bold">gg</span>est</li> <!-- TYPO FIX HERE -->
+                        <li>hot ➔ ho<span class="font-bold">tt</span>er, ho<span class="font-bold">tt</span>est</li>
+                        <li>sad ➔ sa<span class="font-bold">dd</span>er, sa<span class="font-bold">dd</span>est</li>
+                        <li>fat ➔ fa<span class="font-bold">tt</span>er, fa<span class="font-bold">tt</span>est</li>
+                        <li>thin ➔ thi<span class="font-bold">nn</span>er, thi<span class="font-bold">nn</span>est</li>
+                    </ul>
+                </div>
+            </div>
+            
+        </div> <!-- end #card-container -->
+    </div> <!-- end #card-container-wrapper -->
+
+</body>
+</html>
