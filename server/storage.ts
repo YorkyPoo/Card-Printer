@@ -1,37 +1,63 @@
-import { type User, type InsertUser } from "@shared/schema";
+import { type Card, type InsertCard } from "@shared/schema";
 import { randomUUID } from "crypto";
 
-// modify the interface with any CRUD methods
-// you might need
-
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getCards(): Promise<Card[]>;
+  getCard(id: string): Promise<Card | undefined>;
+  createCard(card: InsertCard): Promise<Card>;
+  deleteCard(id: string): Promise<void>;
+  updateCardPosition(id: string, position: number): Promise<Card | undefined>;
+  reorderCards(cardIds: string[]): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
+  private cards: Map<string, Card>;
 
   constructor() {
-    this.users = new Map();
+    this.cards = new Map();
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+  async getCards(): Promise<Card[]> {
+    return Array.from(this.cards.values()).sort((a, b) => 
+      parseInt(a.position) - parseInt(b.position)
     );
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async getCard(id: string): Promise<Card | undefined> {
+    return this.cards.get(id);
+  }
+
+  async createCard(insertCard: InsertCard): Promise<Card> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    const card: Card = { 
+      ...insertCard, 
+      id,
+      createdAt: new Date()
+    };
+    this.cards.set(id, card);
+    return card;
+  }
+
+  async deleteCard(id: string): Promise<void> {
+    this.cards.delete(id);
+  }
+
+  async updateCardPosition(id: string, position: number): Promise<Card | undefined> {
+    const card = this.cards.get(id);
+    if (!card) return undefined;
+    
+    const updatedCard = { ...card, position: position.toString() };
+    this.cards.set(id, updatedCard);
+    return updatedCard;
+  }
+
+  async reorderCards(cardIds: string[]): Promise<void> {
+    cardIds.forEach((id, index) => {
+      const card = this.cards.get(id);
+      if (card) {
+        this.cards.set(id, { ...card, position: index.toString() });
+      }
+    });
   }
 }
 
