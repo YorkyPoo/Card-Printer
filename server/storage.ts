@@ -30,7 +30,8 @@ export class MemStorage implements IStorage {
   async createCard(insertCard: InsertCard): Promise<Card> {
     const id = randomUUID();
     const card: Card = { 
-      ...insertCard, 
+      ...insertCard,
+      originalFileName: insertCard.originalFileName ?? null,
       id,
       createdAt: new Date()
     };
