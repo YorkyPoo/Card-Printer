@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
-import { InsertCard } from "@shared/schema";
+import { InsertCard, InsertTopic } from "@shared/schema";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 
@@ -118,6 +118,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error reordering cards:", error);
       res.status(500).json({ error: "Failed to reorder cards" });
+    }
+  });
+
+  // Topic routes
+  app.get("/api/topics", async (req, res) => {
+    try {
+      const topics = await storage.getTopics();
+      res.json(topics);
+    } catch (error) {
+      console.error("Error fetching topics:", error);
+      res.status(500).json({ error: "Failed to fetch topics" });
+    }
+  });
+
+  app.post("/api/topics", async (req, res) => {
+    try {
+      const { name } = req.body;
+      if (!name) {
+        return res.status(400).json({ error: "Topic name is required" });
+      }
+      const topic: InsertTopic = { name };
+      const newTopic = await storage.createTopic(topic);
+      res.json(newTopic);
+    } catch (error) {
+      console.error("Error creating topic:", error);
+      res.status(500).json({ error: "Failed to create topic" });
+    }
+  });
+
+  app.post("/api/topics/:topicId/cards", async (req, res) => {
+    try {
+      const { topicId } = req.params;
+      const { cardIds } = req.body;
+
+      if (!Array.isArray(cardIds)) {
+        return res.status(400).json({ error: "Invalid card IDs" });
+      }
+
+      await storage.addCardsToTopic(topicId, cardIds);
+      const cards = await storage.getCardsByTopic(topicId);
+      res.json(cards);
+    } catch (error) {
+      console.error("Error adding cards to topic:", error);
+      res.status(500).json({ error: "Failed to add cards to topic" });
+    }
+  });
+
+  app.get("/api/topics/:topicId/cards", async (req, res) => {
+    try {
+      const { topicId } = req.params;
+      const cards = await storage.getCardsByTopic(topicId);
+      res.json(cards);
+    } catch (error) {
+      console.error("Error fetching topic cards:", error);
+      res.status(500).json({ error: "Failed to fetch topic cards" });
+    }
+  });
+
+  app.delete("/api/topics/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteTopic(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting topic:", error);
+      res.status(500).json({ error: "Failed to delete topic" });
     }
   });
 

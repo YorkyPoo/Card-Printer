@@ -1,18 +1,46 @@
 import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card as CardType } from "@shared/schema";
+import { Card as CardType, Topic } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Printer, Upload, Trash2, GripVertical } from "lucide-react";
+import { Printer, Upload, Trash2, GripVertical, Menu, Plus, FolderPlus } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function Home() {
   const [isPrintMode, setIsPrintMode] = useState(false);
+  const [selectedCards, setSelectedCards] = useState<string[]>([]);
+  const [showNewTopicDialog, setShowNewTopicDialog] = useState(false);
+  const [showAddToTopicDialog, setShowAddToTopicDialog] = useState(false);
+  const [newTopicName, setNewTopicName] = useState("");
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
+  const [currentTopicFilter, setCurrentTopicFilter] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: cards = [], isLoading } = useQuery<CardType[]>({
     queryKey: ["/api/cards"],
+  });
+
+  const { data: topics = [] } = useQuery<Topic[]>({
+    queryKey: ["/api/topics"],
   });
 
   const uploadMutation = useMutation({
@@ -46,6 +74,34 @@ export default function Home() {
       toast({
         title: "Card deleted",
         description: "The card has been removed",
+      });
+    },
+  });
+
+  const createTopicMutation = useMutation({
+    mutationFn: async (name: string) =>
+      apiRequest("POST", "/api/topics", { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+      setShowNewTopicDialog(false);
+      setNewTopicName("");
+      toast({
+        title: "Topic created",
+        description: "Your new topic has been created successfully",
+      });
+    },
+  });
+
+  const addCardsToTopicMutation = useMutation({
+    mutationFn: async ({ topicId, cardIds }: { topicId: string; cardIds: string[] }) =>
+      apiRequest("POST", `/api/topics/${topicId}/cards`, { cardIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
+      setShowAddToTopicDialog(false);
+      setSelectedCards([]);
+      toast({
+        title: "Cards added to topic",
+        description: "Selected cards have been added to the topic",
       });
     },
   });
@@ -247,14 +303,61 @@ export default function Home() {
               {cards.length} {cards.length === 1 ? "card" : "cards"} • {totalPages} {totalPages === 1 ? "page" : "pages"}
             </p>
           </div>
-          <Button
-            onClick={() => setIsPrintMode(true)}
-            disabled={cards.length === 0}
-            data-testid="button-preview-print"
-          >
-            <Printer className="w-4 h-4 mr-2" />
-            Preview Print Layout
-          </Button>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Menu className="w-4 h-4 mr-2" />
+                  Topics
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Saved Topics</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setCurrentTopicFilter(null)}>
+                  All Cards
+                </DropdownMenuItem>
+                {topics.map((topic) => (
+                  <DropdownMenuItem
+                    key={topic.id}
+                    onClick={() => setCurrentTopicFilter(topic.id)}
+                  >
+                    {topic.name}
+                  </DropdownMenuItem>
+                ))}
+                {topics.length === 0 && (
+                  <DropdownMenuItem disabled>No topics yet</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowAddToTopicDialog(true)}
+              disabled={cards.length === 0}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add to Topic
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => setShowNewTopicDialog(true)}
+              disabled={cards.length === 0}
+            >
+              <FolderPlus className="w-4 h-4 mr-2" />
+              New Topic
+            </Button>
+
+            <Button
+              onClick={() => setIsPrintMode(true)}
+              disabled={cards.length === 0}
+              data-testid="button-preview-print"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Preview Print Layout
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -344,6 +447,101 @@ export default function Home() {
           </div>
         )}
       </main>
+
+      {/* New Topic Dialog */}
+      <Dialog open={showNewTopicDialog} onOpenChange={setShowNewTopicDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Topic</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new topic collection
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="topic-name">Topic Name</Label>
+              <Input
+                id="topic-name"
+                value={newTopicName}
+                onChange={(e) => setNewTopicName(e.target.value)}
+                placeholder="e.g., Math Cards, Science Terms"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowNewTopicDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createTopicMutation.mutate(newTopicName)}
+              disabled={!newTopicName.trim()}
+            >
+              Create Topic
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add to Topic Dialog */}
+      <Dialog open={showAddToTopicDialog} onOpenChange={setShowAddToTopicDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Cards to Topic</DialogTitle>
+            <DialogDescription>
+              Select a topic to add all current cards to
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Select Topic</Label>
+              <div className="space-y-2">
+                {topics.map((topic) => (
+                  <Button
+                    key={topic.id}
+                    variant={selectedTopicId === topic.id ? "default" : "outline"}
+                    className="w-full justify-start"
+                    onClick={() => setSelectedTopicId(topic.id)}
+                  >
+                    {topic.name}
+                  </Button>
+                ))}
+                {topics.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No topics yet. Create one first!
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddToTopicDialog(false);
+                setSelectedTopicId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedTopicId) {
+                  addCardsToTopicMutation.mutate({
+                    topicId: selectedTopicId,
+                    cardIds: cards.map(c => c.id),
+                  });
+                }
+              }}
+              disabled={!selectedTopicId || cards.length === 0}
+            >
+              Add All Cards
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

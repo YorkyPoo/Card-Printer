@@ -1,5 +1,5 @@
 // Following blueprint:javascript_database integration
-import { type Card, type InsertCard, cards } from "@shared/schema";
+import { type Card, type InsertCard, type Topic, type InsertTopic, cards, topics } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc } from "drizzle-orm";
 
@@ -10,6 +10,11 @@ export interface IStorage {
   deleteCard(id: string): Promise<void>;
   updateCardPosition(id: string, position: number): Promise<Card | undefined>;
   reorderCards(cardIds: string[]): Promise<void>;
+  getTopics(): Promise<Topic[]>;
+  createTopic(topic: InsertTopic): Promise<Topic>;
+  deleteTopic(id: string): Promise<void>;
+  addCardsToTopic(topicId: string, cardIds: string[]): Promise<void>;
+  getCardsByTopic(topicId: string): Promise<Card[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -53,6 +58,34 @@ export class DatabaseStorage implements IStorage {
         db.update(cards).set({ position: index.toString() }).where(eq(cards.id, id))
       )
     );
+  }
+
+  async getTopics(): Promise<Topic[]> {
+    return await db.select().from(topics).orderBy(asc(topics.createdAt));
+  }
+
+  async createTopic(insertTopic: InsertTopic): Promise<Topic> {
+    const [topic] = await db
+      .insert(topics)
+      .values(insertTopic)
+      .returning();
+    return topic;
+  }
+
+  async deleteTopic(id: string): Promise<void> {
+    await db.delete(topics).where(eq(topics.id, id));
+  }
+
+  async addCardsToTopic(topicId: string, cardIds: string[]): Promise<void> {
+    await Promise.all(
+      cardIds.map((cardId) =>
+        db.update(cards).set({ topicId }).where(eq(cards.id, cardId))
+      )
+    );
+  }
+
+  async getCardsByTopic(topicId: string): Promise<Card[]> {
+    return await db.select().from(cards).where(eq(cards.topicId, topicId)).orderBy(asc(cards.position));
   }
 }
 
