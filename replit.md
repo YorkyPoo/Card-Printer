@@ -4,6 +4,25 @@
 
 A web-based utility for creating and printing custom playing cards. Users can upload images to generate printable cards in Magic: The Gathering dimensions (63mm x 88mm), arranged in a 3x3 grid layout optimized for standard letter-size paper. The application provides a workflow for uploading, previewing, managing, and printing cards with a focus on simplicity and efficiency.
 
+## Recent Changes (November 11, 2025)
+
+### Completed Features
+- ✅ Card upload via drag-and-drop and file selection
+- ✅ Automatic card sizing to 63mm x 88mm format
+- ✅ 3-column responsive card grid preview
+- ✅ Card deletion functionality
+- ✅ Print preview mode with 3x3 layout (9 cards per page)
+- ✅ Borderless printing support with @page CSS
+- ✅ Beautiful loading and empty states
+- ✅ Error handling with user feedback toasts
+- ✅ FormData upload support for images
+
+### Known Limitations
+- Cards are stored in memory only - data is lost on server restart
+- Attached HTML files reference external images that are not available in the project
+- Card reordering not yet implemented
+- No persistence layer configured
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -31,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 
 **Design System Configuration**
 - Custom Tailwind theme with HSL-based color system for light mode
-- Consistent spacing scale (2, 4, 6, 8 Tailwind units)
+- Consistent spacing scale (4, 6, 8 Tailwind units)
 - Maximum container width of 7xl with centered layouts
 - Card-specific aspect ratios matching 63mm x 88mm (approximately 5:7)
 
@@ -83,8 +102,8 @@ Preferred communication style: Simple, everyday language.
 
 **Utility Libraries**
 - date-fns for date manipulation
-- nanoid for generating unique identifiers
 - Zod for runtime type validation and schema definition
+- Multer for file uploads
 
 **Session Management**
-- connect-pg-simple for PostgreSQL-backed session store (configured but implementation not visible in provided files)
+- No authentication currently implemented

@@ -1,5 +1,7 @@
-import { type Card, type InsertCard } from "@shared/schema";
-import { randomUUID } from "crypto";
+// Following blueprint:javascript_database integration
+import { type Card, type InsertCard, cards } from "@shared/schema";
+import { db } from "./db";
+import { eq, asc } from "drizzle-orm";
 
 export interface IStorage {
   getCards(): Promise<Card[]>;
@@ -10,56 +12,48 @@ export interface IStorage {
   reorderCards(cardIds: string[]): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private cards: Map<string, Card>;
-
-  constructor() {
-    this.cards = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   async getCards(): Promise<Card[]> {
-    return Array.from(this.cards.values()).sort((a, b) => 
-      parseInt(a.position) - parseInt(b.position)
-    );
+    return await db.select().from(cards).orderBy(asc(cards.position));
   }
 
   async getCard(id: string): Promise<Card | undefined> {
-    return this.cards.get(id);
+    const [card] = await db.select().from(cards).where(eq(cards.id, id));
+    return card || undefined;
   }
 
   async createCard(insertCard: InsertCard): Promise<Card> {
-    const id = randomUUID();
-    const card: Card = { 
-      ...insertCard,
-      originalFileName: insertCard.originalFileName ?? null,
-      id,
-      createdAt: new Date()
-    };
-    this.cards.set(id, card);
+    const [card] = await db
+      .insert(cards)
+      .values({
+        ...insertCard,
+        originalFileName: insertCard.originalFileName ?? null,
+      })
+      .returning();
     return card;
   }
 
   async deleteCard(id: string): Promise<void> {
-    this.cards.delete(id);
+    await db.delete(cards).where(eq(cards.id, id));
   }
 
   async updateCardPosition(id: string, position: number): Promise<Card | undefined> {
-    const card = this.cards.get(id);
-    if (!card) return undefined;
-    
-    const updatedCard = { ...card, position: position.toString() };
-    this.cards.set(id, updatedCard);
-    return updatedCard;
+    const [card] = await db
+      .update(cards)
+      .set({ position: position.toString() })
+      .where(eq(cards.id, id))
+      .returning();
+    return card || undefined;
   }
 
   async reorderCards(cardIds: string[]): Promise<void> {
-    cardIds.forEach((id, index) => {
-      const card = this.cards.get(id);
-      if (card) {
-        this.cards.set(id, { ...card, position: index.toString() });
-      }
-    });
+    // Update each card's position based on its index in the array
+    await Promise.all(
+      cardIds.map((id, index) =>
+        db.update(cards).set({ position: index.toString() }).where(eq(cards.id, id))
+      )
+    );
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
