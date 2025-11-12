@@ -3,21 +3,19 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import multer from "multer";
 import path from "path";
-import { promises as fs } from "fs";
 import { InsertCard, InsertTopic } from "@shared/schema";
+import { v2 as cloudinary } from "cloudinary";
 
-const uploadDir = path.join(process.cwd(), "uploads");
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-fs.mkdir(uploadDir, { recursive: true }).catch(console.error);
-
+// Use memory storage instead of disk storage for Cloudinary upload
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: uploadDir,
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      cb(null, uniqueSuffix + path.extname(file.originalname));
-    },
-  }),
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(
@@ -37,8 +35,6 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.use("/uploads", (await import("express")).static(uploadDir));
-
   app.get("/api/cards", async (req, res) => {
     try {
       const cards = await storage.getCards();
@@ -60,8 +56,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const newCards = await Promise.all(
         req.files.map(async (file) => {
+          // Upload to Cloudinary
+          const uploadResult = await new Promise<string>((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                folder: "flashcards",
+                resource_type: "image",
+              },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result!.secure_url);
+              }
+            );
+            uploadStream.end(file.buffer);
+          });
+
           const card: InsertCard = {
-            imageUrl: `/uploads/${file.filename}`,
+            imageUrl: uploadResult,
             type: "uploaded",
             originalFileName: file.originalname,
             position: (position++).toString(),
@@ -86,13 +97,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Card not found" });
       }
 
-      if (card.type === "uploaded" && card.imageUrl.startsWith("/uploads/")) {
-        const filename = path.basename(card.imageUrl);
-        const filepath = path.join(uploadDir, filename);
+      // Delete from Cloudinary if it's a Cloudinary URL
+      if (card.type === "uploaded" && card.imageUrl.includes("cloudinary.com")) {
         try {
-          await fs.unlink(filepath);
+          // Extract public_id from Cloudinary URL
+          const urlParts = card.imageUrl.split("/");
+          const publicIdWithExt = urlParts.slice(urlParts.indexOf("flashcards")).join("/");
+          const publicId = publicIdWithExt.replace(/\.[^/.]+$/, ""); // Remove extension
+
+          await cloudinary.uploader.destroy(publicId);
         } catch (err) {
-          console.error("Error deleting file:", err);
+          console.error("Error deleting from Cloudinary:", err);
         }
       }
 
