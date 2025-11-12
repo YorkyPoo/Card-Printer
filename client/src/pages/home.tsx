@@ -131,8 +131,13 @@ export default function Home() {
     [uploadMutation]
   );
 
-  const totalPages = Math.ceil(cards.length / 9);
-  const filledCards = [...cards];
+  // Filter cards by topic if a topic is selected
+  const filteredCards = currentTopicFilter
+    ? cards.filter(card => card.topicId === currentTopicFilter)
+    : cards;
+
+  const totalPages = Math.ceil(filteredCards.length / 9);
+  const filledCards = [...filteredCards];
   while (filledCards.length % 9 !== 0 && filledCards.length > 0) {
     filledCards.push({
       id: `empty-${filledCards.length}`,
@@ -415,7 +420,7 @@ export default function Home() {
           <div>
             <h2 className="text-lg font-semibold mb-4">Card Preview</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {cards.map((card) => (
+              {filteredCards.map((card) => (
                 <Card
                   key={card.id}
                   className="aspect-[63/88] relative group overflow-hidden hover-elevate"
