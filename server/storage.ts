@@ -12,8 +12,9 @@ export interface IStorage {
   reorderCards(cardIds: string[]): Promise<void>;
   getTopics(): Promise<Topic[]>;
   createTopic(topic: InsertTopic): Promise<Topic>;
+  updateTopic(id: string, name: string): Promise<Topic>;
   deleteTopic(id: string): Promise<void>;
-  addCardsToTopic(topicId: string, cardIds: string[]): Promise<void>;
+  addCardsToTopic(topicId: string | null, cardIds: string[]): Promise<void>;
   getCardsByTopic(topicId: string): Promise<Card[]>;
 }
 
@@ -72,11 +73,20 @@ export class DatabaseStorage implements IStorage {
     return topic;
   }
 
+  async updateTopic(id: string, name: string): Promise<Topic> {
+    const [topic] = await db
+      .update(topics)
+      .set({ name })
+      .where(eq(topics.id, id))
+      .returning();
+    return topic;
+  }
+
   async deleteTopic(id: string): Promise<void> {
     await db.delete(topics).where(eq(topics.id, id));
   }
 
-  async addCardsToTopic(topicId: string, cardIds: string[]): Promise<void> {
+  async addCardsToTopic(topicId: string | null, cardIds: string[]): Promise<void> {
     await Promise.all(
       cardIds.map((cardId) =>
         db.update(cards).set({ topicId }).where(eq(cards.id, cardId))

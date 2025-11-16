@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card as CardType, Topic } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Printer, Upload, Trash2, GripVertical, Menu, Plus, FolderPlus } from "lucide-react";
+import { Printer, Upload, Trash2, GripVertical, Menu, Plus, FolderPlus, Edit, Tag } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import {
@@ -30,6 +30,10 @@ export default function Home() {
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [showNewTopicDialog, setShowNewTopicDialog] = useState(false);
   const [showAddToTopicDialog, setShowAddToTopicDialog] = useState(false);
+  const [showEditCardDialog, setShowEditCardDialog] = useState(false);
+  const [showRenameTopicDialog, setShowRenameTopicDialog] = useState(false);
+  const [editingCard, setEditingCard] = useState<CardType | null>(null);
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [newTopicName, setNewTopicName] = useState("");
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
   const [currentTopicFilter, setCurrentTopicFilter] = useState<string | null>(null);
@@ -92,6 +96,33 @@ export default function Home() {
     },
   });
 
+  const updateTopicMutation = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) =>
+      apiRequest("PUT", `/api/topics/${id}`, { name }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+      setShowRenameTopicDialog(false);
+      setEditingTopic(null);
+      setNewTopicName("");
+      toast({
+        title: "Topic updated",
+        description: "Topic name has been updated successfully",
+      });
+    },
+  });
+
+  const deleteTopicMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/topics/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
+      toast({
+        title: "Topic deleted",
+        description: "The topic has been removed",
+      });
+    },
+  });
+
   const addCardsToTopicMutation = useMutation({
     mutationFn: async ({ topicId, cardIds }: { topicId: string; cardIds: string[] }) =>
       apiRequest("POST", `/api/topics/${topicId}/cards`, { cardIds }),
@@ -102,6 +133,21 @@ export default function Home() {
       toast({
         title: "Cards added to topic",
         description: "Selected cards have been added to the topic",
+      });
+    },
+  });
+
+  const updateCardTopicMutation = useMutation({
+    mutationFn: async ({ cardId, topicId }: { cardId: string; topicId: string | null }) =>
+      apiRequest("POST", `/api/topics/${topicId || 'none'}/cards`, { cardIds: [cardId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cards"] });
+      setShowEditCardDialog(false);
+      setEditingCard(null);
+      setSelectedTopicId(null);
+      toast({
+        title: "Card updated",
+        description: "Card topic has been updated successfully",
       });
     },
   });
@@ -323,12 +369,40 @@ export default function Home() {
                   All Cards
                 </DropdownMenuItem>
                 {topics.map((topic) => (
-                  <DropdownMenuItem
-                    key={topic.id}
-                    onClick={() => setCurrentTopicFilter(topic.id)}
-                  >
-                    {topic.name}
-                  </DropdownMenuItem>
+                  <div key={topic.id} className="flex items-center gap-1 px-2 py-1.5 hover:bg-accent rounded-sm">
+                    <button
+                      className="flex-1 text-left text-sm"
+                      onClick={() => setCurrentTopicFilter(topic.id)}
+                    >
+                      {topic.name}
+                    </button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTopic(topic);
+                        setNewTopicName(topic.name);
+                        setShowRenameTopicDialog(true);
+                      }}
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm(`Delete topic "${topic.name}"? Cards will not be deleted.`)) {
+                          deleteTopicMutation.mutate(topic.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                 ))}
                 {topics.length === 0 && (
                   <DropdownMenuItem disabled>No topics yet</DropdownMenuItem>
@@ -434,6 +508,18 @@ export default function Home() {
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <Button
                       size="icon"
+                      variant="secondary"
+                      onClick={() => {
+                        setEditingCard(card);
+                        setSelectedTopicId(card.topicId || null);
+                        setShowEditCardDialog(true);
+                      }}
+                      data-testid={`button-edit-${card.id}`}
+                    >
+                      <Tag className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
                       variant="destructive"
                       onClick={() => deleteMutation.mutate(card.id)}
                       data-testid={`button-delete-${card.id}`}
@@ -536,13 +622,135 @@ export default function Home() {
                 if (selectedTopicId) {
                   addCardsToTopicMutation.mutate({
                     topicId: selectedTopicId,
-                    cardIds: cards.map(c => c.id),
+                    cardIds: filteredCards.filter(c => c.type !== 'empty').map(c => c.id),
                   });
                 }
               }}
-              disabled={!selectedTopicId || cards.length === 0}
+              disabled={!selectedTopicId || filteredCards.length === 0}
             >
-              Add All Cards
+              Add {currentTopicFilter ? 'These' : 'All'} Cards
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Card Topic Dialog */}
+      <Dialog open={showEditCardDialog} onOpenChange={setShowEditCardDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Card Topic</DialogTitle>
+            <DialogDescription>
+              Change the topic for "{editingCard?.originalFileName || 'this card'}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Select Topic</Label>
+                <div className="space-y-2">
+                  <Button
+                    variant={selectedTopicId === null ? "default" : "outline"}
+                    className="w-full justify-start"
+                    onClick={() => setSelectedTopicId(null)}
+                  >
+                    No Topic (Remove from all topics)
+                  </Button>
+                  {topics.map((topic) => (
+                    <Button
+                      key={topic.id}
+                      variant={selectedTopicId === topic.id ? "default" : "outline"}
+                      className="w-full justify-start"
+                      onClick={() => setSelectedTopicId(topic.id)}
+                    >
+                      {topic.name}
+                    </Button>
+                  ))}
+                </div>
+                {topics.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No topics yet. Create one first!
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowEditCardDialog(false);
+                setEditingCard(null);
+                setSelectedTopicId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingCard) {
+                  updateCardTopicMutation.mutate({
+                    cardId: editingCard.id,
+                    topicId: selectedTopicId,
+                  });
+                }
+              }}
+              disabled={!editingCard}
+            >
+              Update Topic
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Topic Dialog */}
+      <Dialog open={showRenameTopicDialog} onOpenChange={setShowRenameTopicDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Topic</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this topic
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="rename-topic-name">Topic Name</Label>
+            <Input
+              id="rename-topic-name"
+              value={newTopicName}
+              onChange={(e) => setNewTopicName(e.target.value)}
+              placeholder="Enter topic name"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTopicName.trim() && editingTopic) {
+                  updateTopicMutation.mutate({
+                    id: editingTopic.id,
+                    name: newTopicName.trim(),
+                  });
+                }
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRenameTopicDialog(false);
+                setEditingTopic(null);
+                setNewTopicName("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingTopic && newTopicName.trim()) {
+                  updateTopicMutation.mutate({
+                    id: editingTopic.id,
+                    name: newTopicName.trim(),
+                  });
+                }
+              }}
+              disabled={!newTopicName.trim()}
+            >
+              Rename Topic
             </Button>
           </DialogFooter>
         </DialogContent>

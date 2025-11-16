@@ -171,9 +171,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid card IDs" });
       }
 
-      await storage.addCardsToTopic(topicId, cardIds);
-      const cards = await storage.getCardsByTopic(topicId);
-      res.json(cards);
+      // If topicId is 'none', remove cards from all topics by setting topicId to null
+      const actualTopicId = topicId === 'none' ? null : topicId;
+      await storage.addCardsToTopic(actualTopicId as string, cardIds);
+
+      // Return updated cards
+      const allCards = await storage.getCards();
+      res.json(allCards);
     } catch (error) {
       console.error("Error adding cards to topic:", error);
       res.status(500).json({ error: "Failed to add cards to topic" });
@@ -188,6 +192,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching topic cards:", error);
       res.status(500).json({ error: "Failed to fetch topic cards" });
+    }
+  });
+
+  app.put("/api/topics/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name } = req.body;
+      if (!name) {
+        return res.status(400).json({ error: "Topic name is required" });
+      }
+      const updatedTopic = await storage.updateTopic(id, name);
+      res.json(updatedTopic);
+    } catch (error) {
+      console.error("Error updating topic:", error);
+      res.status(500).json({ error: "Failed to update topic" });
     }
   });
 
